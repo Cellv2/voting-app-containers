@@ -15,3 +15,10 @@ The overall goals of this is to:
 -   Be able to easily spin up a set of containers with the several separate elements of the app via docker-compose
 -   Learn a little more .NET Core/.NET 6 (used as the Redis-MonboDB interface)
 -   Use this as a basis of a follow up project which will aim to put this into Kubernetes
+
+## Commands
+
+| Command | Action |
+|---|---|
+| ```docker compose up``` | Spins up everything |
+| ```docker compose up --build``` | Rebuilds everything and then spins it up |

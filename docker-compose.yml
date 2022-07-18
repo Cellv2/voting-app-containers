@@ -1,0 +1,12 @@
+version: "3"
+services:
+    voting-app:
+        build: ./voting-app
+        ports:
+            - 3000:3000
+        depends_on:
+            - redis
+    redis:
+        image: redis:7.0.4-alpine
+        ports:
+            - 6379:6379
