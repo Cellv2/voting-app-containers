@@ -1,12 +1,30 @@
 version: "3"
 services:
-    voting-app:
-        build: ./voting-app
+    voting-app-client:
+        build: ./voting-app/client/
         ports:
             - 3000:3000
         depends_on:
             - redis
+            - voting-app-server
+        networks:
+            - front-end
+            - back-end
+    voting-app-server:
+        build: ./voting-app/server/
+        ports:
+            - 8080:8080
+        depends_on:
+            - redis
+        networks:
+            - front-end
+            - back-end
     redis:
         image: redis:7.0.4-alpine
         ports:
             - 6379:6379
+        networks:
+            - back-end
+networks:
+    front-end:
+    back-end:
