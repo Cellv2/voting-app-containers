@@ -1,5 +1,7 @@
 import express from "express";
 
+import voteRouter from "./routes/vote.route";
+
 const app = express();
 const port = 8080; // default port to listen
 
@@ -7,6 +9,8 @@ const port = 8080; // default port to listen
 app.get("/", (req, res) => {
     res.send("Hello world!");
 });
+
+app.use("/vote", voteRouter);
 
 // start the Express server
 app.listen(port, () => {
