@@ -1,5 +1,17 @@
 version: "3"
 services:
+    proxy:
+        build: ./nginx
+        ports:
+            - 5000:3000
+            - 5050:8080
+        depends_on:
+            - voting-app-client
+            - voting-app-server
+            - redis
+        networks:
+            - front-end
+            - back-end
     voting-app-client:
         build: ./voting-app/client/
         ports:
@@ -9,7 +21,6 @@ services:
             - voting-app-server
         networks:
             - front-end
-            - back-end
     voting-app-server:
         build: ./voting-app/server/
         ports:
@@ -17,7 +28,6 @@ services:
         depends_on:
             - redis
         networks:
-            - front-end
             - back-end
     redis:
         image: redis:7.0.4-alpine
