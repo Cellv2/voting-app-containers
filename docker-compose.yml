@@ -29,12 +29,30 @@ services:
             - redis
         networks:
             - back-end
+    worker:
+        build: ./worker
+        depends_on:
+            - mongodb
+            - redis
+        networks:
+            - back-end
+        environment:
+            - MONGODB_CONNSTRING=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb
     redis:
         image: redis:7.0.4-alpine
         ports:
             - 6379:6379
         networks:
             - back-end
+    mongodb:
+        image: mongo:5.0.9
+        networks:
+            - back-end
+        ports:
+            - 27017:27017
+        environment:
+            - MONGO_INITDB_ROOT_USERNAME=${MONGODB_USERNAME}
+            - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
 networks:
     front-end:
     back-end:
