@@ -6,7 +6,8 @@ using MongoDB.Driver;
 
 void ConfigureServices(IServiceCollection services)
 {
-    var multiplexer = ConnectionMultiplexer.Connect("localhost");
+    // var multiplexer = ConnectionMultiplexer.Connect("localhost");
+    var multiplexer = ConnectionMultiplexer.Connect("redis");
     // ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(
     //     new ConfigurationOptions
     //     {
@@ -15,100 +16,42 @@ void ConfigureServices(IServiceCollection services)
     services.AddSingleton<IConnectionMultiplexer>(multiplexer);
 
     services.AddSingleton<IMongoClient>(sp => {
-        var mongodbSettings = MongoClientSettings.FromConnectionString("mongodb://");
+        var connString = System.Environment.GetEnvironmentVariable("MONGODB_CONNSTRING");
+        var mongodbSettings = MongoClientSettings.FromConnectionString(connString);
         mongodbSettings.ServerApi = new ServerApi(ServerApiVersion.V1);
         IMongoClient client = new MongoClient(mongodbSettings);
         return client;
     });
-
-    // MongoDB.Bson.Serialization.BsonClassMap.RegisterClassMap<Vote>();
-
-
-    // services.AddTransient<IMongoClient>(client);
-    // IMongoClient x = new MongoClient();
-
-
-    // services.AddTransient<IMongoClient>(x);
-    // services.AddTransient<MongoDatabaseBase>(db2);
-    // services.AddTransient<IMongoDatabase>(sp =>
-    // {
-    //     var mongodbSettings = MongoClientSettings.FromConnectionString("mongodb://");
-    //     mongodbSettings.ServerApi = new ServerApi(ServerApiVersion.V1);
-    //     IMongoClient client = new MongoClient(mongodbSettings);
-    //     var db = client.GetDatabase("votes");
-    //     return db;
-    // });
 }
 
 IServiceCollection serviceCollection = new ServiceCollection();
 ConfigureServices(serviceCollection);
 
 var services = serviceCollection.BuildServiceProvider();
-var redisConnectionMultiplexer = services.GetRequiredService<IConnectionMultiplexer>();
-
-// var x = new RedisTest(redisConnectionMultiplexer);
-// await x.ListKeysEverySecond();
-
-
 // https://mongodb.github.io/mongo-csharp-driver/2.17/
 var mongodbClient = services.GetRequiredService<IMongoClient>();
 var mongoService = new MongoDbService(mongodbClient, "votes", "votes");
 
-try
-{
 
-    // var connString = "mongodb://@mongodb";
-    // var mongodb = new MongoClient(connString);
+var redisConnectionMultiplexer = services.GetRequiredService<IConnectionMultiplexer>();
 
-    // var connString = System.Environment.GetEnvironmentVariable("MONGODB_CONNSTRING")
-    // var settings = MongoClientSettings.FromConnectionString("mongodb://@mongodb");
-    var settings = MongoClientSettings.FromConnectionString("mongodb://");
-    // Set the version of the Stable API on the client.
-    settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-    var client = new MongoClient(settings);
-    var database = client.GetDatabase("votes");
-    // Console.WriteLine(client.ListDatabases().ToList());
-    var collection = database.GetCollection<BsonDocument>("votes");
-    var collections = await database.ListCollectionNamesAsync();
-    Console.WriteLine(string.Join(",", collections.ToList()));
+var x = new RedisTest(redisConnectionMultiplexer, mongoService);
+await x.ListKeysEverySecond();
 
 
-    // https://mongodb.github.io/mongo-csharp-driver/2.17/getting_started/quick_tour/
-    // var voteOptionOne = new BsonDocument
-    // {
-    //     { "voteOption", "1" },
-    //     { "count", 0 },
-    // };
-    // var voteOptionTwo = new BsonDocument
-    // {
-    //     { "voteOption", "2" },
-    //     { "count", 0 },
-    // };
-
-    // await collection.InsertOneAsync(voteOptionOne);
-    // await collection.InsertOneAsync(voteOptionTwo);
-
-
-    // var votesCollection = database.GetCollection("votes");
-
-    // database.
-
-
-}
-catch (Exception err)
-{
-    Console.WriteLine(err);
-}
 
 
 // TODO: just make it better
 public class RedisTest
 {
     private readonly IConnectionMultiplexer _redis;
+    private readonly MongoDbService _mongoDbService;
 
-    public RedisTest(IConnectionMultiplexer redisMultiplexer)
+    // TODO: get rid of the mongoDbService instance, it shouldn't be here
+    public RedisTest(IConnectionMultiplexer redisMultiplexer, MongoDbService mongoDbService)
     {
         _redis = redisMultiplexer;
+        _mongoDbService = mongoDbService;
     }
 
     public async Task ListKeysEverySecond()
@@ -128,6 +71,9 @@ public class RedisTest
             foreach (var key in keys)
             {
                 var val = await db.StringGetAsync(key);
+                if (key == "1" || key == "2") {
+                    _mongoDbService.UpdateVoteDoc(key, val);
+                }
                 Console.WriteLine($"{key} : {val.ToString()}");
             }
 
@@ -158,11 +104,18 @@ public class Vote
     }
 }
 
+
+// TODO: can we set up an index for the voteOptions field?
+// TODO: add increments on redis updates (?) or do we just update it to the value shown in redis
+// https://www.mongodb.com/docs/manual/reference/operator/update/inc/
 public class MongoDbService
 {
     private readonly IMongoClient _client;
     private readonly IMongoDatabase _database;
     private readonly IMongoCollection<Vote> _collection;
+
+    private FilterDefinition<Vote> _filterVoteOptionOne = Builders<Vote>.Filter.Eq("voteOption", VoteOption.One);
+    private FilterDefinition<Vote> _filterVoteOptionTwo = Builders<Vote>.Filter.Eq("voteOption", VoteOption.Two);
 
     public MongoDbService(IMongoClient client, string dbName, string collectionName) {
         _client = client;
@@ -175,13 +128,12 @@ public class MongoDbService
         CheckBaseVoteDocsExist();
     }
 
+    // TODO: look at upserting on doc update? we could probably then remove this
+    // as we do not upsert, we check that the doc exists on client initialisation
     private void CheckBaseVoteDocsExist()
     {
-        // _collection.Find({"voteOption": "one"});
-        var filterOne = Builders<Vote>.Filter.Eq("voteOption", VoteOption.One);
-        var filterTwo = Builders<Vote>.Filter.Eq("voteOption", VoteOption.Two);
-        var docOne = _collection.Find(filterOne).CountDocuments();
-        var docTwo = _collection.Find(filterTwo).CountDocuments();
+        var docOne = _collection.Find(_filterVoteOptionOne).CountDocuments();
+        var docTwo = _collection.Find(_filterVoteOptionTwo).CountDocuments();
 
         if (docOne == 0) {
             CreateEmptyVoteDoc(VoteOption.One);
@@ -191,13 +143,11 @@ public class MongoDbService
             CreateEmptyVoteDoc(VoteOption.Two);
         }
 
-        var resultsOne = _collection.Find(filterOne).ToList();
-        // var results = _collection.Find(x => x.voteOption == "1").ToList();
+        var resultsOne = _collection.Find(_filterVoteOptionOne).ToList();
         Console.WriteLine(string.Join(",", resultsOne.Select(x => x.voteOption)));
         Console.WriteLine(string.Join(",", resultsOne.Select(x => x.count)));
 
-        var resultsTwo = _collection.Find(filterTwo).ToList();
-        // var results = _collection.Find(x => x.voteOption == "2").ToList();
+        var resultsTwo = _collection.Find(_filterVoteOptionTwo).ToList();
         Console.WriteLine(string.Join(",", resultsTwo.Select(x => x.voteOption)));
         Console.WriteLine(string.Join(",", resultsTwo.Select(x => x.count)));
     }
@@ -206,5 +156,21 @@ public class MongoDbService
         var voteOptionOne = new Vote(voteOption, 0);
 
         _collection.InsertOne(voteOptionOne);
+    }
+
+    public void UpdateVoteDoc(string voteOption, string newValue) {
+        var update = Builders<Vote>.Update.Set("count", newValue);
+
+        if (voteOption == "1")
+        {
+            _collection.UpdateOne(_filterVoteOptionOne, update);
+            return;
+        }
+
+        if (voteOption == "2")
+        {
+            _collection.UpdateOne(_filterVoteOptionTwo, update);
+            return;
+        }
     }
 }
