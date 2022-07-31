@@ -28,6 +28,7 @@ IServiceCollection serviceCollection = new ServiceCollection();
 ConfigureServices(serviceCollection);
 
 var services = serviceCollection.BuildServiceProvider();
+
 // https://mongodb.github.io/mongo-csharp-driver/2.17/
 var mongodbClient = services.GetRequiredService<IMongoClient>();
 var mongoService = new MongoDbService(mongodbClient, "votes", "votes");
@@ -36,50 +37,69 @@ var mongoService = new MongoDbService(mongodbClient, "votes", "votes");
 var redisConnectionMultiplexer = services.GetRequiredService<IConnectionMultiplexer>();
 
 var x = new RedisTest(redisConnectionMultiplexer, mongoService);
-await x.ListKeysEverySecond();
+// await x.ListKeysEverySecond();
+
+var sync = new DatabaseSync(mongoService, x);
+await sync.SyncRedisIntoMongoDb();
 
 
+public class DatabaseSync {
+    private readonly MongoDbService _mongoDbService;
+    private readonly RedisTest _redisTest;
+
+    public DatabaseSync (MongoDbService mongoDbService, RedisTest redisTest) {
+        _mongoDbService = mongoDbService;
+        _redisTest = redisTest;
+    }
+
+    public async Task SyncRedisIntoMongoDb() {
+        var counter = 0;
+        var max = 100;
+
+        while (max == -1 || counter < max)
+        {
+            var counts = await _redisTest.ListWorkerKeys();
+            var numVotesForOne = counts.votesForOne;
+            var numVotesForTwo = counts.votesForTwo;
+
+            _mongoDbService.UpdateVoteDoc(VoteOption.One, numVotesForOne);
+            _mongoDbService.UpdateVoteDoc(VoteOption.Two, numVotesForTwo);
+
+            // counter++;
+            await Task.Delay(TimeSpan.FromMilliseconds(1_000));
+        }
+    }
+}
 
 
 // TODO: just make it better
 public class RedisTest
 {
     private readonly IConnectionMultiplexer _redis;
-    private readonly MongoDbService _mongoDbService;
 
     // TODO: get rid of the mongoDbService instance, it shouldn't be here
     public RedisTest(IConnectionMultiplexer redisMultiplexer, MongoDbService mongoDbService)
     {
         _redis = redisMultiplexer;
-        _mongoDbService = mongoDbService;
     }
 
-    public async Task ListKeysEverySecond()
+    public async Task<(string votesForOne, string votesForTwo)> ListWorkerKeys()
     {
         IDatabase db = _redis.GetDatabase();
-        IServer server = _redis.GetServer(_redis.GetEndPoints()[0]);
+        // IServer server = _redis.GetServer(_redis.GetEndPoints()[0]);
+        // var keys = server.Keys();
 
-        var counter = 0;
-        var max = 100;
+        // foreach (var key in keys)
+        // {
+        //     var val = db.StringGet(key);
+        //     Console.WriteLine($"{key} : {val.ToString()}");
+        // }
 
-        while (max == -1 || counter < max)
-        {
-            Console.WriteLine($"Counter: {++counter}");
+        var votesForOne = await db.StringGetAsync(VoteOption.One);
+        var votesForTwo = await db.StringGetAsync(VoteOption.Two);
 
-            var keys = server.Keys();
-
-            foreach (var key in keys)
-            {
-                var val = await db.StringGetAsync(key);
-                if (key == "1" || key == "2") {
-                    _mongoDbService.UpdateVoteDoc(key, val);
-                }
-                Console.WriteLine($"{key} : {val.ToString()}");
-            }
-
-            // Console.WriteLine(string.Join(",", keys.ToList()));
-            await Task.Delay(TimeSpan.FromMilliseconds(1_000));
-        }
+        var res = (votesForOne, votesForTwo);
+        return res;
     }
 }
 
