@@ -35,30 +35,29 @@ var mongoService = new MongoDbService(mongodbClient, "votes", "votes");
 
 
 var redisConnectionMultiplexer = services.GetRequiredService<IConnectionMultiplexer>();
+var redisService = new RedisService(redisConnectionMultiplexer);
 
-var x = new RedisTest(redisConnectionMultiplexer, mongoService);
-// await x.ListKeysEverySecond();
-
-var sync = new DatabaseSync(mongoService, x);
+var sync = new DatabaseSync(mongoService, redisService);
 await sync.SyncRedisIntoMongoDb();
 
 
 public class DatabaseSync {
     private readonly MongoDbService _mongoDbService;
-    private readonly RedisTest _redisTest;
+    private readonly RedisService _redisService;
 
-    public DatabaseSync (MongoDbService mongoDbService, RedisTest redisTest) {
+    public DatabaseSync (MongoDbService mongoDbService, RedisService redisService) {
         _mongoDbService = mongoDbService;
-        _redisTest = redisTest;
+        _redisService = redisService;
     }
 
+    // TODO: move the delay out of here
     public async Task SyncRedisIntoMongoDb() {
         var counter = 0;
         var max = 100;
 
         while (max == -1 || counter < max)
         {
-            var counts = await _redisTest.ListWorkerKeys();
+            var counts = await _redisService.GetVoteCounts();
             var numVotesForOne = counts.votesForOne;
             var numVotesForTwo = counts.votesForTwo;
 
@@ -72,18 +71,16 @@ public class DatabaseSync {
 }
 
 
-// TODO: just make it better
-public class RedisTest
+public class RedisService
 {
     private readonly IConnectionMultiplexer _redis;
 
-    // TODO: get rid of the mongoDbService instance, it shouldn't be here
-    public RedisTest(IConnectionMultiplexer redisMultiplexer, MongoDbService mongoDbService)
+    public RedisService(IConnectionMultiplexer redisMultiplexer)
     {
         _redis = redisMultiplexer;
     }
 
-    public async Task<(string votesForOne, string votesForTwo)> ListWorkerKeys()
+    public async Task<(string votesForOne, string votesForTwo)> GetVoteCounts()
     {
         IDatabase db = _redis.GetDatabase();
         // IServer server = _redis.GetServer(_redis.GetEndPoints()[0]);
