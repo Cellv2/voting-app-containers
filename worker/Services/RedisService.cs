@@ -1,5 +1,5 @@
 using StackExchange.Redis;
-using VotingAppContainers.Worker.Classes;
+using VotingAppContainers.Worker.Models;
 
 namespace VotingAppContainers.Worker.Services
 {

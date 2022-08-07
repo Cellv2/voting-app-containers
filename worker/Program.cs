@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using MongoDB.Driver;
-using VotingAppContainers.Worker.Classes;
+using VotingAppContainers.Worker.Models;
 using VotingAppContainers.Worker.Services;
 using VotingAppContainers.Worker.App;
 

@@ -1,7 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace VotingAppContainers.Worker.Classes
+namespace VotingAppContainers.Worker.Models
 {
     public class VoteOption
     {
