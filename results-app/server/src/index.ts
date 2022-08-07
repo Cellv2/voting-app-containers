@@ -1,4 +1,5 @@
-import mongoose, { model, Schema } from "mongoose";
+import mongoose from "mongoose";
+import { Vote } from "./models/Vote";
 
 import "dotenv/config";
 
@@ -10,20 +11,6 @@ const dbName = "votes";
 // https://www.mongodb.com/docs/manual/reference/connection-string/#components
 // const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
 const uri = process.env.MONGODB_CONNSTRING + `/${dbName}?authSource=admin`;
-
-interface Vote {
-    voteOption: string;
-    count: number;
-}
-
-const voteSchema = new Schema<Vote>({
-    voteOption: { type: String, required: true },
-    count: { type: Number, required: true },
-});
-
-// https://github.com/Automattic/mongoose/blob/master/examples/schema/schema.js
-
-const Vote = model<Vote>("vote", voteSchema);
 
 // TODO: remove, this was for testing
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
