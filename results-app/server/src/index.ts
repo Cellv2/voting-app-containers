@@ -8,7 +8,8 @@ const dbName = "votes";
 // dbName is required, else mongoose defaults to 'test'
 // authSource is required else auth against the dbName won't be allowed, as auth has not been configured against that db
 // https://www.mongodb.com/docs/manual/reference/connection-string/#components
-const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
+// const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
+const uri = process.env.MONGODB_CONNSTRING + `/${dbName}?authSource=admin`;
 
 interface Vote {
     voteOption: string;

@@ -29,6 +29,15 @@ services:
             - redis
         networks:
             - back-end
+    results-app-server:
+        build: ./results-app/server/
+        depends_on:
+            - mongodb
+            - worker
+        networks:
+            - back-end
+        environment:
+            - MONGODB_CONNSTRING=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb
     worker:
         build: ./worker
         depends_on:
