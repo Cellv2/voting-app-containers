@@ -1,26 +1,48 @@
-import { MongoClient } from "mongodb";
+import mongoose, { model, Schema } from "mongoose";
 
 import "dotenv/config";
 
 console.log("hiya!");
 
-const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017`;
-const client = new MongoClient(uri);
+const dbName = "votes";
+// dbName is required, else mongoose defaults to 'test'
+// authSource is required else auth against the dbName won't be allowed, as auth has not been configured against that db
+// https://www.mongodb.com/docs/manual/reference/connection-string/#components
+const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
+
+interface Vote {
+    voteOption: string;
+    count: number;
+}
+
+const voteSchema = new Schema<Vote>({
+    voteOption: { type: String, required: true },
+    count: { type: Number, required: true },
+});
+
+// https://github.com/Automattic/mongoose/blob/master/examples/schema/schema.js
+
+const Vote = model<Vote>("vote", voteSchema);
+
+// TODO: remove, this was for testing
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function run() {
     try {
-        const database = client.db("votes");
-        const collection = database.collection("votes");
-        const cursor = collection.find({});
-        await cursor.forEach((item) => console.log(item));
+        // TODO: remove, this was for testing
+        for (let i = 0; i < 5; i++) {
+            await delay(5000);
 
-        // const queryForOne = { voteOption: "1" };
-        // const queryForTwo = { voteOption: "2" };
+            await mongoose.connect(uri);
+
+            const findAllVotes = await Vote.find({});
+            console.log(findAllVotes);
+        }
     } catch (err) {
         console.error(err);
     } finally {
         // Ensures that the client will close when you finish/error
-        await client.close();
+        await mongoose.connection.close();
     }
 }
 
