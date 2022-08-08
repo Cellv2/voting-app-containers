@@ -31,6 +31,8 @@ services:
             - back-end
     results-app-server:
         build: ./results-app/server/
+        ports:
+            - 8081:8081
         depends_on:
             - mongodb
             - worker
