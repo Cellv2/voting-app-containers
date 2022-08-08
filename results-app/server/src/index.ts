@@ -1,7 +1,28 @@
-import mongoose from "mongoose";
-import { Vote } from "./models/Vote";
+import cors from "cors";
+import express from "express";
 
 import "dotenv/config";
+
+import mongodbSvc from "./services/mongodb";
+
+const app = express();
+app.use(cors());
+
+app.get("/", (req, res) => res.send("moo"));
+app.get("/votes", async (req, res) => {
+    try {
+        const data = await mongodbSvc.findAllVotes();
+        const formatted = data
+            .map((datum) => `<p>${datum.voteOption} : ${datum.count}</p>`)
+            .join("");
+
+        res.send(formatted);
+    } catch (err) {
+        console.error(err);
+    }
+});
+
+
 
 console.log("hiya!");
 
@@ -9,8 +30,8 @@ const dbName = "votes";
 // dbName is required, else mongoose defaults to 'test'
 // authSource is required else auth against the dbName won't be allowed, as auth has not been configured against that db
 // https://www.mongodb.com/docs/manual/reference/connection-string/#components
-// const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
-const uri = process.env.MONGODB_CONNSTRING + `/${dbName}?authSource=admin`;
+const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
+// const uri = process.env.MONGODB_CONNSTRING + `/${dbName}?authSource=admin`;
 
 // TODO: remove, this was for testing
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -21,20 +42,22 @@ async function run() {
         for (let i = 0; i < 5; i++) {
             await delay(5000);
 
-            await mongoose.connect(uri);
-
-            const findAllVotes = await Vote.find({});
-            console.log(findAllVotes);
+            mongodbSvc.findAllVotes();
         }
     } catch (err) {
         console.error(err);
     } finally {
         // Ensures that the client will close when you finish/error
-        await mongoose.connection.close();
+        // TODO: need some kind of connection close on shutdown
+        // await mongoose.connection.close();
     }
 }
 
 run().catch(console.dir);
+
+app.listen(8081, () => {
+    console.log(`server started at http://localhost:8081`);
+});
 
 // we want to make this realtime, cause why not
 // https://www.mongodb.com/basics/change-streams
