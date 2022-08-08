@@ -1,6 +1,6 @@
 import { model, Schema } from "mongoose";
 
-interface Vote {
+export interface Vote {
     voteOption: string;
     count: number;
 }
