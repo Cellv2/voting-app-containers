@@ -12,4 +12,5 @@ const voteSchema = new Schema<Vote>({
 
 // https://github.com/Automattic/mongoose/blob/master/examples/schema/schema.js
 
-export const Vote = model<Vote>("vote", voteSchema);
+// https://mongoosejs.com/docs/connections.html#buffering
+export const VoteModel = model<Vote>("vote", voteSchema);

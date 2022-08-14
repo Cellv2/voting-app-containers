@@ -42,7 +42,17 @@ async function run() {
         for (let i = 0; i < 5; i++) {
             await delay(5000);
 
-            mongodbSvc.findAllVotes();
+            // await mongodbSvc.findAllVotes();
+
+            // TODO: remove - this was testing async initialisation
+            const [votes1, votes2] = await Promise.all([
+                mongodbSvc.findAllVotes(),
+                mongodbSvc.findAllVotes()
+
+            ])
+
+            console.log(votes1)
+            console.log(votes2)
         }
     } catch (err) {
         console.error(err);
