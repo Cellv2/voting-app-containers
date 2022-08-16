@@ -1,5 +1,6 @@
 import cors from "cors";
 import express from "express";
+import path from "path";
 
 import "dotenv/config";
 
@@ -7,8 +8,9 @@ import mongodbSvc from "./services/mongodb";
 
 const app = express();
 app.use(cors());
+app.use(express.static(path.join(__dirname, "public")));
 
-app.get("/", (req, res) => res.send("moo"));
+app.get('/');
 app.get("/votes", async (req, res) => {
     try {
         const data = await mongodbSvc.findAllVotes();
