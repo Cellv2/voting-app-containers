@@ -1,10 +1,12 @@
 import cors from "cors";
 import express from "express";
 import path from "path";
+import ws, { WebSocket } from 'ws'
 
 import "dotenv/config";
 
 import mongodbSvc from "./services/mongodb";
+
 
 const app = express();
 app.use(cors());
@@ -24,6 +26,42 @@ app.get("/votes", async (req, res) => {
     }
 });
 
+
+const generateRandomMessage = () => {
+    return "" + Math.floor(Math.random() * 100);
+
+}
+
+const wss = new WebSocket.Server({ port: 8085 });
+
+const clients = new Map();
+
+let interval: NodeJS.Timer;
+
+wss.on('connection', (ws) => {
+
+    // set up the interval before adding any clients
+    if (!clients.size){
+        interval = setInterval(() => {
+            // multicast example
+            [...clients.keys()].forEach((client) => {
+                client.send(JSON.stringify(generateRandomMessage()));
+            });
+        }, 1000);
+    }
+
+    const id = Math.random();
+    const metadata = { id };
+
+    clients.set(ws, metadata);
+});
+
+wss.on("close", () => {
+  clients.delete(ws);
+  if (!clients.size) {
+    clearInterval(interval);
+  }
+});
 
 
 console.log("hiya!");
