@@ -50,7 +50,7 @@ services:
         environment:
             - MONGODB_CONNSTRING=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb
     redis:
-        image: redis:7.0.4-alpine
+        build: ./redis
         ports:
             - 6379:6379
         networks:
