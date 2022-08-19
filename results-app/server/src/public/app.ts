@@ -9,24 +9,33 @@ const addMessage = (message: string) => {
 };
 
 const connectToServer = async (): Promise<WebSocket> => {
-    const ws = new WebSocket("ws://localhost:8085/ws");
-    return new Promise((resolve, reject) => {
-        const timer = setInterval(() => {
-            if (ws.readyState === 1) {
-                clearInterval(timer);
-                resolve(ws);
-            }
-        }, 10);
-    });
+    try {
+        const ws = new WebSocket("ws://localhost:8085/ws");
+        return new Promise((resolve, reject) => {
+            const timer = setInterval(() => {
+                if (ws.readyState === 1) {
+                    clearInterval(timer);
+                    resolve(ws);
+                }
+            }, 10);
+        });
+    } catch (err) {
+        console.log(`wss - client: an error occurred: \n${err}`);
+        return Promise.reject(err);
+    }
 };
 
 const setupClientWs = async () => {
-    const ws = await connectToServer();
+    try {
+        const ws = await connectToServer();
 
-    ws.onmessage = (webSocketMessage: { data: string }) => {
-        const messageBody = JSON.parse(webSocketMessage.data);
-        addMessage(messageBody);
-    };
+        ws.onmessage = (webSocketMessage: { data: string }) => {
+            const messageBody = JSON.parse(webSocketMessage.data);
+            addMessage(messageBody);
+        };
+    } catch (err) {
+        console.error(err);
+    }
 };
 
 (async () => {

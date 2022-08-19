@@ -33,6 +33,7 @@ services:
         build: ./results-app/server/
         ports:
             - 8081:8081
+            - 8085:8085
         depends_on:
             - mongodb
             - worker

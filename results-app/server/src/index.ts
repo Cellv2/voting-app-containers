@@ -1,18 +1,18 @@
 import cors from "cors";
 import express from "express";
 import path from "path";
-import ws, { WebSocket } from 'ws'
+import ws, { WebSocket } from "ws";
+import { WSS_PORT } from "./constants/wss";
 
 import "dotenv/config";
 
 import mongodbSvc from "./services/mongodb";
 
-
 const app = express();
 app.use(cors());
 app.use(express.static(path.join(__dirname, "public")));
 
-app.get('/');
+app.get("/");
 app.get("/votes", async (req, res) => {
     try {
         const data = await mongodbSvc.findAllVotes();
@@ -26,22 +26,27 @@ app.get("/votes", async (req, res) => {
     }
 });
 
-
 const generateRandomMessage = () => {
     return "" + Math.floor(Math.random() * 100);
+};
 
-}
+const wss = new WebSocket.Server({ port: WSS_PORT });
+console.log(`wss - server: starting`);
+wss.on("listening", () => {
+    console.log(`wss - server: started and listening on ${wss.options.port}`);
+});
 
-const wss = new WebSocket.Server({ port: 8085 });
+wss.on("error", (err) =>
+    console.log(`wss - server: an error occurred: \n${err}`)
+);
 
 const clients = new Map();
 
 let interval: NodeJS.Timer;
 
-wss.on('connection', (ws) => {
-
+wss.on("connection", (ws) => {
     // set up the interval before adding any clients
-    if (!clients.size){
+    if (!clients.size) {
         interval = setInterval(() => {
             // multicast example
             [...clients.keys()].forEach((client) => {
@@ -57,12 +62,11 @@ wss.on('connection', (ws) => {
 });
 
 wss.on("close", () => {
-  clients.delete(ws);
-  if (!clients.size) {
-    clearInterval(interval);
-  }
+    clients.delete(ws);
+    if (!clients.size) {
+        clearInterval(interval);
+    }
 });
-
 
 console.log("hiya!");
 
@@ -87,12 +91,11 @@ async function run() {
             // TODO: remove - this was testing async initialisation
             const [votes1, votes2] = await Promise.all([
                 mongodbSvc.findAllVotes(),
-                mongodbSvc.findAllVotes()
+                mongodbSvc.findAllVotes(),
+            ]);
 
-            ])
-
-            console.log(votes1)
-            console.log(votes2)
+            console.log(votes1);
+            console.log(votes2);
         }
     } catch (err) {
         console.error(err);
@@ -106,7 +109,7 @@ async function run() {
 run().catch(console.dir);
 
 app.listen(8081, () => {
-    console.log(`server started at http://localhost:8081`);
+    console.log(`express server started at http://localhost:8081`);
 });
 
 // we want to make this realtime, cause why not
