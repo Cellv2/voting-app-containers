@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using MongoDB.Driver;
-using VotingAppContainers.Worker.Models;
 using VotingAppContainers.Worker.Services;
 using VotingAppContainers.Worker.App;
 
@@ -20,8 +19,7 @@ var redisConnectionMultiplexer = services.GetRequiredService<IConnectionMultiple
 var redisService = new RedisService(redisConnectionMultiplexer);
 
 var sync = new DatabaseSync(mongoService, redisService);
-// await sync.SyncRedisIntoMongoDb();
-await sync.Sync();
+await sync.StreamRedisUpdatesIntoMongoDb();
 
 
 public class DatabaseSync
@@ -35,7 +33,7 @@ public class DatabaseSync
         _redisService = redisService;
     }
 
-    public async Task Sync()
+    public async Task StreamRedisUpdatesIntoMongoDb()
     {
         var subs = _redisService.GetKeyspaceChannelMessageQueues();
 
@@ -57,27 +55,7 @@ public class DatabaseSync
         {
             // TODO: make the heartbeat better somehow?
             Console.WriteLine("Worker keep alive heartbeat");
-            await Task.Delay(TimeSpan.FromSeconds(10));
-        }
-    }
-
-    // TODO: move the delay out of here
-    public async Task SyncRedisIntoMongoDb()
-    {
-        var counter = 0;
-        var max = 100;
-
-        while (max == -1 || counter < max)
-        {
-            var counts = await _redisService.GetVoteCounts();
-            var numVotesForOne = counts.votesForOne;
-            var numVotesForTwo = counts.votesForTwo;
-
-            _mongoDbService.UpdateVoteDoc(VoteOption.One, numVotesForOne);
-            _mongoDbService.UpdateVoteDoc(VoteOption.Two, numVotesForTwo);
-
-            // counter++;
-            await Task.Delay(TimeSpan.FromMilliseconds(1_000));
+            await Task.Delay(TimeSpan.FromSeconds(30));
         }
     }
 }

@@ -25,74 +25,23 @@ namespace VotingAppContainers.Worker.Services
             return _keyspaceSubscription;
         }
 
-        // TODO: constant the keyspaces and channels to make them easy to update
-        public void CreateSubscriptions2()
+        public async Task<string> GetVoteCounts(string option)
         {
-            ISubscriber subscriber = _redis.GetSubscriber();
-            // subscriber.Subscribe("__keyspace@0__:*", (channel, value) =>
-            // {
-            //     if (channel.ToString() == "__keyspace@0__:1")
-            //     {
-            //         Console.WriteLine($"key 1 was updated, the new value is {value}");
-            //     }
-            //     else if (channel.ToString() == "__keyspace@0__:2")
-            //     {
-            //         Console.WriteLine($"key 2 was updated, the new value is {value}");
-            //     }
-            // });
+            IDatabase db = _redis.GetDatabase();
 
-            var x = subscriber.Subscribe("__keyspace@0__:1");
+            return (await db.StringGetAsync(option)).ToString();
 
-            subscriber.Subscribe("__keyspace@0__:1").OnMessage(message =>
-            {
-                Console.WriteLine($"key 1 was updated, the new value is {GetVoteCounts(VoteOption.One).Result}");
-                // GetVoteCounts()
-            });
-
-            subscriber.Subscribe("__keyspace@0__:2").OnMessage(message =>
-            {
-                Console.WriteLine($"key 2 was updated, the new value is {GetVoteCounts(VoteOption.Two).Result}");
-            });
         }
 
         public async Task<(string votesForOne, string votesForTwo)> GetVoteCounts()
         {
             IDatabase db = _redis.GetDatabase();
-            // IServer server = _redis.GetServer(_redis.GetEndPoints()[0]);
-            // var keys = server.Keys();
-
-            // foreach (var key in keys)
-            // {
-            //     var val = db.StringGet(key);
-            //     Console.WriteLine($"{key} : {val.ToString()}");
-            // }
 
             var votesForOne = await db.StringGetAsync(VoteOption.One);
             var votesForTwo = await db.StringGetAsync(VoteOption.Two);
 
             var res = (votesForOne, votesForTwo);
             return res;
-        }
-
-        public async Task<string> GetVoteCounts(string option)
-        {
-            IDatabase db = _redis.GetDatabase();
-            // IServer server = _redis.GetServer(_redis.GetEndPoints()[0]);
-            // var keys = server.Keys();
-
-            // foreach (var key in keys)
-            // {
-            //     var val = db.StringGet(key);
-            //     Console.WriteLine($"{key} : {val.ToString()}");
-            // }
-
-            return (await db.StringGetAsync(option)).ToString();
-
-            // var votesForOne = await db.StringGetAsync(VoteOption.One);
-            // var votesForTwo = await db.StringGetAsync(VoteOption.Two);
-
-            // var res = (votesForOne, votesForTwo);
-            // return res;
         }
     }
 }
