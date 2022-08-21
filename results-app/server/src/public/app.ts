@@ -20,9 +20,9 @@ const updateVoteCounts = (votes: Vote[]): void => {
     votes.forEach((voteItem) => {
         const { count, voteOption } = voteItem;
         if (voteOption === "1") {
-            voteOneContainer.innerText = "" + count ?? 0;
+            voteOneContainer.innerText = `Votes for 1: ${count ?? 0}`;
         } else if (voteOption === "2") {
-            voteTwoContainer.innerText = "" + count ?? 0;
+            voteTwoContainer.innerText = `Votes for 2: ${count ?? 0}`;
         }
     });
 };
