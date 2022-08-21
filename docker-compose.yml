@@ -14,6 +14,7 @@ services:
             - back-end
         profiles:
             - test
+            - main
     voting-app-client:
         build: ./voting-app/client/
         ports:
@@ -25,6 +26,7 @@ services:
             - front-end
         profiles:
             - test
+            - main
     voting-app-server:
         build: ./voting-app/server/
         ports:
@@ -35,6 +37,7 @@ services:
             - back-end
         profiles:
             - test
+            - main
     results-app-server:
         build: ./results-app/server/
         ports:
@@ -49,6 +52,7 @@ services:
             - MONGODB_CONNSTRING=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb
         profiles:
             - debug
+            - main
     worker:
         build: ./worker
         depends_on:
@@ -60,6 +64,7 @@ services:
             - MONGODB_CONNSTRING=mongodb://${MONGODB_USERNAME}:${MONGODB_PASSWORD}@mongodb
         profiles:
             - test
+            - main
     redis:
         build: ./redis
         ports:
@@ -68,6 +73,7 @@ services:
             - back-end
         profiles:
             - test
+            - main
     mongodb:
         image: mongo:5.0.9
         networks:
@@ -79,6 +85,7 @@ services:
             - MONGO_INITDB_ROOT_PASSWORD=${MONGODB_PASSWORD}
         profiles:
             - test
+            - main
 networks:
     front-end:
     back-end:

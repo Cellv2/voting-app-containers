@@ -25,8 +25,10 @@ The overall goals of this is to:
 
 ## Commands
 
-| Command                     | Action                                   |
-| --------------------------- | ---------------------------------------- |
-| `docker compose build`      | Builds the images                        |
-| `docker compose up`         | Spins up everything                      |
-| `docker compose up --build` | Rebuilds everything and then spins it up |
+| Command                                    | Action                                   |
+| ------------------------------------------ | ---------------------------------------- |
+| `docker compose build`                     | Builds the images                        |
+| `docker compose --profile main up`         | Spins up everything                      |
+| `docker compose --profile main up --build` | Rebuilds everything and then spins it up |
+
+Note that there are several profiles in the docker compose file. I found it annoying to constantly spin up a subset of containers (normally all except one) and then running the final service manually (npm start style). Please use `--profile test` and `--profile debug` to split them out, with `--profile main` containing all services.
