@@ -26,10 +26,6 @@ app.get("/votes", async (req, res) => {
     }
 });
 
-const generateRandomMessage = () => {
-    return "" + Math.floor(Math.random() * 100);
-};
-
 const wss = new WebSocket.Server({ port: WSS_PORT });
 console.log(`wss - server: starting`);
 wss.on("listening", () => {
@@ -49,8 +45,8 @@ wss.on("connection", (ws) => {
     if (!clients.size) {
         interval = setInterval(() => {
             // multicast example
-            [...clients.keys()].forEach((client) => {
-                client.send(JSON.stringify(generateRandomMessage()));
+            [...clients.keys()].forEach(async (client) => {
+                client.send(JSON.stringify(await mongodbSvc.findAllVotes()));
             });
         }, 1000);
     }
@@ -77,36 +73,36 @@ const dbName = "votes";
 const uri = `mongodb://${process.env.DEV_MONGODB_USER}:${process.env.DEV_MONGODB_PASS}@localhost:27017/${dbName}?authSource=admin`;
 // const uri = process.env.MONGODB_CONNSTRING + `/${dbName}?authSource=admin`;
 
-// TODO: remove, this was for testing
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+// // TODO: remove, this was for testing
+// const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function run() {
-    try {
-        // TODO: remove, this was for testing
-        for (let i = 0; i < 5; i++) {
-            await delay(5000);
+// async function run() {
+//     try {
+//         // TODO: remove, this was for testing
+//         for (let i = 0; i < 5; i++) {
+//             await delay(5000);
 
-            // await mongodbSvc.findAllVotes();
+//             // await mongodbSvc.findAllVotes();
 
-            // TODO: remove - this was testing async initialisation
-            const [votes1, votes2] = await Promise.all([
-                mongodbSvc.findAllVotes(),
-                mongodbSvc.findAllVotes(),
-            ]);
+//             // TODO: remove - this was testing async initialisation
+//             const [votes1, votes2] = await Promise.all([
+//                 mongodbSvc.findAllVotes(),
+//                 mongodbSvc.findAllVotes(),
+//             ]);
 
-            console.log(votes1);
-            console.log(votes2);
-        }
-    } catch (err) {
-        console.error(err);
-    } finally {
-        // Ensures that the client will close when you finish/error
-        // TODO: need some kind of connection close on shutdown
-        // await mongoose.connection.close();
-    }
-}
+//             console.log(votes1);
+//             console.log(votes2);
+//         }
+//     } catch (err) {
+//         console.error(err);
+//     } finally {
+//         // Ensures that the client will close when you finish/error
+//         // TODO: need some kind of connection close on shutdown
+//         // await mongoose.connection.close();
+//     }
+// }
 
-run().catch(console.dir);
+// run().catch(console.dir);
 
 app.listen(8081, () => {
     console.log(`express server started at http://localhost:8081`);

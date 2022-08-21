@@ -1,11 +1,30 @@
-const addMessage = (message: string) => {
+import { Vote } from "../models/Vote";
+
+let voteOneContainer: HTMLParagraphElement;
+let voteTwoContainer: HTMLParagraphElement;
+
+const setupVoteElements = (): void => {
     const root = document.getElementById("root");
     if (!root) return;
 
-    const testNode = document.createElement("p");
-    testNode.innerText = message;
+    voteOneContainer = document.createElement("p");
+    voteOneContainer.id = "voteOneContainer";
 
-    root.appendChild(testNode);
+    voteTwoContainer = document.createElement("p");
+    voteTwoContainer.id = "voteTwoContainer";
+
+    root.append(voteOneContainer, voteTwoContainer);
+};
+
+const updateVoteCounts = (votes: Vote[]): void => {
+    votes.forEach((voteItem) => {
+        const { count, voteOption } = voteItem;
+        if (voteOption === "1") {
+            voteOneContainer.innerText = "" + count ?? 0;
+        } else if (voteOption === "2") {
+            voteTwoContainer.innerText = "" + count ?? 0;
+        }
+    });
 };
 
 const connectToServer = async (): Promise<WebSocket> => {
@@ -30,8 +49,8 @@ const setupClientWs = async () => {
         const ws = await connectToServer();
 
         ws.onmessage = (webSocketMessage: { data: string }) => {
-            const messageBody = JSON.parse(webSocketMessage.data);
-            addMessage(messageBody);
+            const messageBody = JSON.parse(webSocketMessage.data) as Vote[];
+            updateVoteCounts(messageBody);
         };
     } catch (err) {
         console.error(err);
@@ -39,5 +58,6 @@ const setupClientWs = async () => {
 };
 
 (async () => {
+    setupVoteElements();
     await setupClientWs();
 })();
